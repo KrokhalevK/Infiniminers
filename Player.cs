@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Infiniminers_v0._0
 {
-    internal class Player
+    public class Player
     {
         public int X {  get; set; }
         public int Y { get; set; }

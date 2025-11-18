@@ -1,84 +1,69 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Windows.Forms;
+
 namespace Infiniminers_v0._0
 {
     public partial class Form1 : Form
     {
-        Player player;
-        List<Ore> ores;
-        HashSet<Keys> pressedKeys = new HashSet<Keys>();
+        private GameController game;
+        private GameRenderer renderer;
+        private HashSet<Keys> pressedKeys = new HashSet<Keys>();
+
         public Form1()
         {
             InitializeComponent();
 
-            player = new Player(300, 300);
-            ores = new List<Ore>();
-            
-            Random rnd = new Random();
-
-            for (int i = 0; i < 5; i++)
-            {
-                int x = rnd.Next(50, this.ClientSize.Width - 50);
-                int y = rnd.Next(50, this.ClientSize.Height - 50);
-                int value = rnd.Next(10, 101);
-                Color color = Color.Gold;
-                ores.Add(new Ore(x, y, value, color));
-            }
+            game = new GameController(this.ClientSize);
+            renderer = new GameRenderer();
 
             this.KeyPreview = true;
             this.KeyDown += MainForm_KeyDown;
             this.KeyUp += MainForm_KeyUp;
             this.DoubleBuffered = true;
         }
-        
+
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
             pressedKeys.Add(e.KeyCode);
-
-            int dx = 0, dy = 0;
-            if (pressedKeys.Contains(Keys.A)) dx = -1;
-            if (pressedKeys.Contains(Keys.D)) dx = 1;
-            if (pressedKeys.Contains(Keys.W)) dy = -1;
-            if (pressedKeys.Contains(Keys.S)) dy = 1;
-
-            if (dx != 0 || dy != 0)
-            {
-                player.Move(dx, dy);
-                this.Invalidate();
-            }
-
-            for (int i = ores.Count - 1; i >= 0; i--)
-            {
-                Ore ore = ores[i];
-                if ((player.X +player.Size >= ore.X && ore.X + ore.Size >= player.X) && player.Y + player.Size >= ore.Y && ore.Y + ore.Size >= player.Y)
-                {
-                    player.Money += ore.Value;
-                    ores.RemoveAt(i);
-                }
-            }
-            this.Invalidate();
+            ProcessMovement();
         }
+
         private void MainForm_KeyUp(object sender, KeyEventArgs e)
         {
             pressedKeys.Remove(e.KeyCode);
+            ProcessMovement();
+        }
+
+        private void ProcessMovement()
+        {
+            int dx = 0, dy = 0;
+            if (pressedKeys.Contains(Keys.A)) dx -= 1;
+            if (pressedKeys.Contains(Keys.D)) dx += 1;
+            if (pressedKeys.Contains(Keys.W)) dy -= 1;
+            if (pressedKeys.Contains(Keys.S)) dy += 1;
+
+            if (dx != 0 || dy != 0)
+            {
+                game.MovePlayer(dx, dy);
+                game.CollectOre();
+                this.Invalidate();
+            }
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            Graphics g = e.Graphics;
-            
-            
-            Brush playerBrush = Brushes.SaddleBrown;
-            g.FillRectangle(playerBrush, player.X, player.Y, player.Size, player.Size);
-            g.DrawString($"X:{player.X} Y:{player.Y}", this.Font, Brushes.Black, 10, 10);
-            g.DrawString($"Деньги: {player.Money}", this.Font, Brushes.Black, 10, 30);
+            renderer.Draw(e.Graphics, game);
 
+            // Отрисовка HUD (тексты с отступами)
+            int startX = 10;
+            int startY = 10;
+            int lineHeight = (int)this.Font.GetHeight() + 5;
 
-            foreach (Ore ore in ores) 
-            {
-                Brush oreBrush = new SolidBrush(ore.OreColor);
-                e.Graphics.FillRectangle(oreBrush, ore.X, ore.Y, ore.Size, ore.Size);
-                e.Graphics.DrawString($"{ore.Value}", this.Font, Brushes.Black, ore.X, ore.Y - 15);
-            }
+            e.Graphics.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
+            e.Graphics.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
         }
     }
 }
