@@ -16,10 +16,11 @@ namespace Infiniminers_v0._0
 
         public Ore(int x, int y, int value, Color color)
         {
+            Random rnd = new Random();
             X = x;
             Y = y;
             Value = value;
-            Size = 70;
+            Size = rnd.Next(30, 70);
             OreColor = color;
         }
     }

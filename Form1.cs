@@ -9,7 +9,7 @@ namespace Infiniminers_v0._0
         {
             InitializeComponent();
 
-            player = new Player(100, 100);
+            player = new Player(300, 300);
             ores = new List<Ore>();
             
             Random rnd = new Random();
@@ -48,7 +48,7 @@ namespace Infiniminers_v0._0
             for (int i = ores.Count - 1; i >= 0; i--)
             {
                 Ore ore = ores[i];
-                if (Math.Abs(player.X - ore.X) < player.Size && Math.Abs(player.Y - ore.Y) < player.Size)
+                if ((player.X +player.Size >= ore.X && ore.X + ore.Size >= player.X) && player.Y + player.Size >= ore.Y && ore.Y + ore.Size >= player.Y)
                 {
                     player.Money += ore.Value;
                     ores.RemoveAt(i);
