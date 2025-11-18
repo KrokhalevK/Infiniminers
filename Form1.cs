@@ -8,7 +8,10 @@ namespace Infiniminers_v0._0
     public partial class Form1 : Form
     {
         private GameController game;
-        private GameRenderer renderer;
+        private GameRenderer gameRenderer;
+        private MainMenuRenderer menuRenderer;
+        private PauseMenuRenderer pauseMenuRenderer;
+        private MenuController menuController;
         private HashSet<Keys> pressedKeys = new HashSet<Keys>();
 
         public Form1()
@@ -16,7 +19,10 @@ namespace Infiniminers_v0._0
             InitializeComponent();
 
             game = new GameController(this.ClientSize);
-            renderer = new GameRenderer();
+            gameRenderer = new GameRenderer();
+            menuRenderer = new MainMenuRenderer();
+            pauseMenuRenderer = new PauseMenuRenderer();
+            menuController = new MenuController();
 
             this.KeyPreview = true;
             this.KeyDown += MainForm_KeyDown;
@@ -26,14 +32,96 @@ namespace Infiniminers_v0._0
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
         {
-            pressedKeys.Add(e.KeyCode);
-            ProcessMovement();
+            if (menuController.CurrentState == GameState.MainMenu)
+            {
+                HandleMainMenuInput(e.KeyCode);
+            }
+            else if (menuController.CurrentState == GameState.Settings)
+            {
+                if (e.KeyCode == Keys.Escape)
+                {
+                    menuController.BackToMenu();
+                }
+                this.Invalidate();
+            }
+            else if (menuController.CurrentState == GameState.Playing)
+            {
+                if (e.KeyCode == Keys.Escape)
+                {
+                    menuController.PauseGame();
+                    this.Invalidate();
+                    return;
+                }
+
+                pressedKeys.Add(e.KeyCode);
+                ProcessMovement();
+                this.Invalidate();
+            }
+            else if (menuController.CurrentState == GameState.Paused)
+            {
+                HandlePauseMenuInput(e.KeyCode);
+            }
         }
 
         private void MainForm_KeyUp(object sender, KeyEventArgs e)
         {
-            pressedKeys.Remove(e.KeyCode);
-            ProcessMovement();
+            if (menuController.CurrentState == GameState.Playing)
+            {
+                pressedKeys.Remove(e.KeyCode);
+                ProcessMovement();
+            }
+        }
+
+        private void HandleMainMenuInput(Keys key)
+        {
+            if (key == Keys.W)
+            {
+                menuController.MoveMenuSelection(-1);
+            }
+            else if (key == Keys.S)
+            {
+                menuController.MoveMenuSelection(1);
+            }
+            else if (key == Keys.Return)
+            {
+                MenuController.MenuOption option = menuController.GetSelectedOption();
+                if (option == MenuController.MenuOption.Exit)
+                {
+                    this.Close();
+                }
+                else
+                {
+                    menuController.SelectOption();
+                }
+            }
+
+            this.Invalidate();
+        }
+
+        private void HandlePauseMenuInput(Keys key)
+        {
+            if (key == Keys.W)
+            {
+                menuController.MoveMenuSelection(-1);
+            }
+            else if (key == Keys.S)
+            {
+                menuController.MoveMenuSelection(1);
+            }
+            else if (key == Keys.Return)
+            {
+                MenuController.PauseMenuOption option = menuController.GetSelectedPauseOption();
+                if (option == MenuController.PauseMenuOption.Exit)
+                {
+                    this.Close();
+                }
+                else
+                {
+                    menuController.SelectPauseOption();
+                }
+            }
+
+            this.Invalidate();
         }
 
         private void ProcessMovement()
@@ -48,22 +136,38 @@ namespace Infiniminers_v0._0
             {
                 game.MovePlayer(dx, dy);
                 game.CollectOre();
-                this.Invalidate();
             }
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            renderer.Draw(e.Graphics, game);
 
-            // Отрисовка HUD (тексты с отступами)
-            int startX = 10;
-            int startY = 10;
-            int lineHeight = (int)this.Font.GetHeight() + 5;
+            if (menuController.CurrentState == GameState.MainMenu)
+            {
+                menuRenderer.DrawMainMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+            }
+            else if (menuController.CurrentState == GameState.Settings)
+            {
+                menuRenderer.DrawSettingsMenu(e.Graphics, this.ClientSize);
+            }
+            else if (menuController.CurrentState == GameState.Playing)
+            {
+                gameRenderer.Draw(e.Graphics, game);
 
-            e.Graphics.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
-            e.Graphics.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
+                int startX = 10;
+                int startY = 10;
+                int lineHeight = (int)this.Font.GetHeight() + 5;
+
+                e.Graphics.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
+                e.Graphics.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
+                e.Graphics.DrawString("ESC - Пауза", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
+            }
+            else if (menuController.CurrentState == GameState.Paused)
+            {
+                gameRenderer.Draw(e.Graphics, game);
+                pauseMenuRenderer.DrawPauseMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+            }
         }
     }
 }
