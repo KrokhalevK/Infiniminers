@@ -21,8 +21,8 @@ namespace Infiniminers_v0._0
             Y = startY;
             Money = 0;
             Mana = 100;
-            Speed = 500;
-            Size = 50;
+            Speed = 50;
+            Size = 120;
         }
 
         public void Move(int dx, int dy)

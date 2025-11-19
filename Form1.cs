@@ -5,12 +5,14 @@ using System.Windows.Forms;
 
 namespace Infiniminers_v0._0
 {
-    public partial class Form1 : Form
+    public partial class 
+        Form1 : Form
     {
         private GameController game;
         private GameRenderer gameRenderer;
         private MainMenuRenderer menuRenderer;
         private PauseMenuRenderer pauseMenuRenderer;
+        private ResourceManager resourceManager;
         private MenuController menuController;
         private HashSet<Keys> pressedKeys = new HashSet<Keys>();
 
@@ -18,8 +20,9 @@ namespace Infiniminers_v0._0
         {
             InitializeComponent();
 
+            resourceManager = new ResourceManager();
             game = new GameController(this.ClientSize);
-            gameRenderer = new GameRenderer();
+            gameRenderer = new GameRenderer(resourceManager);
             menuRenderer = new MainMenuRenderer();
             pauseMenuRenderer = new PauseMenuRenderer();
             menuController = new MenuController();
@@ -162,6 +165,7 @@ namespace Infiniminers_v0._0
                 e.Graphics.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
                 e.Graphics.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
                 e.Graphics.DrawString("ESC - Пауза", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
+                e.Graphics.DrawString($"Пак: {resourceManager.GetCurrentResourcePackName()}", this.Font, Brushes.Black, startX, startY + lineHeight * 3);
             }
             else if (menuController.CurrentState == GameState.Paused)
             {
