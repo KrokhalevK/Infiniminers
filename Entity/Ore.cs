@@ -1,27 +1,62 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Infiniminers_v0._0
+﻿namespace Infiniminers_v0._0
 {
     public class Ore
     {
-        public int X {  get; set; }
+        public int X { get; set; }
         public int Y { get; set; }
         public int Size { get; set; }
-        public int Value { get; set; }
-        public Color OreColor { get; set; }
+        public OreType Type { get; private set; }
+        public OreData Data { get; private set; }
+        public int Durability { get; set; }
+        public int MaxDurability { get; set; }
 
-        public Ore(int x, int y, int value, Color color)
+        private static Random rnd = new Random();
+
+        public Ore(int x, int y, OreType type)
         {
-            Random rnd = new Random();
             X = x;
             Y = y;
-            Value = value;
-            Size = rnd.Next(30, 70);
-            OreColor = color;
+            Type = type;
+            Data = OreDatabase.GetOreData(type);
+
+            Size = rnd.Next(60, 140);
+            Durability = Data.Durability;
+            MaxDurability = Data.Durability;
+        }
+
+        public int TakeDamage(int pickaxeDamage)
+        {
+            int finalDamage = CalculateDamage(pickaxeDamage);
+            Durability = Math.Max(0, Durability - finalDamage);
+            return finalDamage;
+        }
+
+        private int CalculateDamage(int pickaxeDamage)
+        {
+            int damage = pickaxeDamage - Data.Armor;
+            return Math.Max(0, damage);
+        }
+
+        public bool IsDestroyed => Durability <= 0;
+
+        public float GetHealthPercent()
+        {
+            return (float)Durability / MaxDurability;
+        }
+
+        public Color GetColor()
+        {
+            return Data.Color;
+        }
+
+        public string GetTextureName()
+        {
+            return Data.TextureName;
+        }
+
+        public int GetValue()
+        {
+            return Data.Value;
         }
     }
 }

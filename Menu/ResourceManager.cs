@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-
-namespace Infiniminers_v0._0
+﻿namespace Infiniminers_v0._0
 {
     public class ResourceManager
     {

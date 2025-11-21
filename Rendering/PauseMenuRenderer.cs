@@ -1,37 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-
-namespace Infiniminers_v0._0
+﻿namespace Infiniminers_v0._0
 {
-    public class MainMenuRenderer
+    public class PauseMenuRenderer
     {
         private Font titleFont;
         private Font menuFont;
         private Font selectedFont;
 
-        public MainMenuRenderer()
+        public PauseMenuRenderer()
         {
             titleFont = new Font("Arial", 36, FontStyle.Bold);
             menuFont = new Font("Arial", 20);
             selectedFont = new Font("Arial", 20, FontStyle.Bold);
         }
 
-        public void DrawMainMenu(Graphics g, Size screenSize, int selectedIndex)
+        public void DrawPauseMenu(Graphics g, Size screenSize, int selectedIndex)
         {
-            // Рисуем фон
-            g.Clear(Color.DarkGray);
+            // Рисуем полупрозрачный оверлей
+            using (Brush darkBrush = new SolidBrush(Color.FromArgb(100, 0, 0, 0)))
+            {
+                g.FillRectangle(darkBrush, 0, 0, screenSize.Width, screenSize.Height);
+            }
 
             // Рисуем заголовок
-            string title = "INFINIMINERS";
+            string title = "ПАУЗА";
             SizeF titleSize = g.MeasureString(title, titleFont);
             float titleX = (screenSize.Width - titleSize.Width) / 2;
-            float titleY = 50;
-            g.DrawString(title, titleFont, Brushes.Gold, titleX, titleY);
+            float titleY = 100;
+            g.DrawString(title, titleFont, Brushes.White, titleX, titleY);
 
-            // Опции меню
-            string[] menuOptions = { "Начать игру", "Настройки", "Выход" };
-            float menuStartY = 200;
+            // Опции меню паузы
+            string[] menuOptions = { "Продолжить", "В главное меню", "Выход" };
+            float menuStartY = 250;
             float lineSpacing = 60;
 
             for (int i = 0; i < menuOptions.Length; i++)
@@ -48,19 +47,6 @@ namespace Infiniminers_v0._0
 
             // Подсказка управления
             g.DrawString("W/S - Выбор | Enter - Выбрать", new Font("Arial", 12), Brushes.LightGray, 10, screenSize.Height - 30);
-        }
-
-        public void DrawSettingsMenu(Graphics g, Size screenSize)
-        {
-            g.Clear(Color.DarkGray);
-
-            string title = "НАСТРОЙКИ";
-            SizeF titleSize = g.MeasureString(title, titleFont);
-            float titleX = (screenSize.Width - titleSize.Width) / 2;
-            g.DrawString(title, titleFont, Brushes.Gold, titleX, 50);
-
-            g.DrawString("Здесь будут настройки", menuFont, Brushes.White, 100, 150);
-            g.DrawString("ESC - Вернуться в меню", new Font("Arial", 12), Brushes.LightGray, 10, screenSize.Height - 30);
         }
     }
 }

@@ -5,6 +5,7 @@
         MainMenu,
         Playing,
         Settings,
-        Paused
+        Paused,
+        Shop
     }
 }

@@ -5,8 +5,7 @@ using System.Windows.Forms;
 
 namespace Infiniminers_v0._0
 {
-    public partial class 
-        Form1 : Form
+    public partial class Form1 : Form
     {
         private GameController game;
         private GameRenderer gameRenderer;
@@ -14,88 +13,132 @@ namespace Infiniminers_v0._0
         private PauseMenuRenderer pauseMenuRenderer;
         private ResourceManager resourceManager;
         private MenuController menuController;
+        private ShopController shopController;
+        private ShopRenderer shopRenderer;
         private HashSet<Keys> pressedKeys = new HashSet<Keys>();
 
         public Form1()
         {
             InitializeComponent();
+            InitializeGame();
+            InitializeForm();
+        }
 
+        private void InitializeGame()
+        {
             resourceManager = new ResourceManager();
             game = new GameController(this.ClientSize);
             gameRenderer = new GameRenderer(resourceManager);
             menuRenderer = new MainMenuRenderer();
             pauseMenuRenderer = new PauseMenuRenderer();
             menuController = new MenuController();
+            shopController = new ShopController();
+            shopRenderer = new ShopRenderer();
+        }
 
+        private void InitializeForm()
+        {
             this.KeyPreview = true;
             this.KeyDown += MainForm_KeyDown;
             this.KeyUp += MainForm_KeyUp;
             this.DoubleBuffered = true;
+            this.WindowState = FormWindowState.Maximized;
         }
 
-        private void MainForm_KeyDown(object sender, KeyEventArgs e)
+        private void MainForm_KeyDown(object? sender, KeyEventArgs e)
         {
-            if (menuController.CurrentState == GameState.MainMenu)
+            switch (menuController.CurrentState)
             {
-                HandleMainMenuInput(e.KeyCode);
-            }
-            else if (menuController.CurrentState == GameState.Settings)
-            {
-                if (e.KeyCode == Keys.Escape)
-                {
-                    menuController.BackToMenu();
-                }
-                this.Invalidate();
-            }
-            else if (menuController.CurrentState == GameState.Playing)
-            {
-                if (e.KeyCode == Keys.Escape)
-                {
-                    menuController.PauseGame();
-                    this.Invalidate();
-                    return;
-                }
-
-                pressedKeys.Add(e.KeyCode);
-                ProcessMovement();
-                this.Invalidate();
-            }
-            else if (menuController.CurrentState == GameState.Paused)
-            {
-                HandlePauseMenuInput(e.KeyCode);
+                case GameState.MainMenu:
+                    HandleMainMenuInput(e.KeyCode);
+                    break;
+                case GameState.Settings:
+                    HandleSettingsInput(e.KeyCode);
+                    break;
+                case GameState.Playing:
+                    HandleGameplayInput(e.KeyCode);
+                    break;
+                case GameState.Paused:
+                    HandlePauseMenuInput(e.KeyCode);
+                    break;
+                case GameState.Shop:
+                    HandleShopInput(e.KeyCode);
+                    break;
             }
         }
 
-        private void MainForm_KeyUp(object sender, KeyEventArgs e)
+        private void MainForm_KeyUp(object? sender, KeyEventArgs e)
         {
             if (menuController.CurrentState == GameState.Playing)
-            {
                 pressedKeys.Remove(e.KeyCode);
-                ProcessMovement();
+        }
+
+        private void HandleSettingsInput(Keys key)
+        {
+            if (key == Keys.Escape)
+                menuController.BackToMenu();
+            this.Invalidate();
+        }
+
+        private void HandleGameplayInput(Keys key)
+        {
+            if (key == Keys.Escape)
+            {
+                menuController.PauseGame();
+                this.Invalidate();
+                return;
             }
+
+            if (key == Keys.I)
+            {
+                menuController.CurrentState = GameState.Shop;
+                shopController.Reset();
+                this.Invalidate();
+                return;
+            }
+
+            if (key == Keys.Space)
+            {
+                game.CollectOre();
+                this.Invalidate();
+                return;
+            }
+
+            pressedKeys.Add(key);
+            ProcessMovement();
+            this.Invalidate();
+        }
+
+        private void HandleShopInput(Keys key)
+        {
+            if (key == Keys.I)
+            {
+                menuController.CurrentState = GameState.Playing;
+                this.Invalidate();
+                return;
+            }
+
+            if (key == Keys.W)
+                shopController.MoveSelection(-1);
+            else if (key == Keys.S)
+                shopController.MoveSelection(1);
+            else if (key == Keys.Enter)
+                shopController.TryBuyPickaxe(game.Player);
+
+            this.Invalidate();
         }
 
         private void HandleMainMenuInput(Keys key)
         {
-            if (key == Keys.W)
-            {
-                menuController.MoveMenuSelection(-1);
-            }
-            else if (key == Keys.S)
-            {
-                menuController.MoveMenuSelection(1);
-            }
-            else if (key == Keys.Return)
+            HandleMenuNavigation(key);
+
+            if (key == Keys.Return)
             {
                 MenuController.MenuOption option = menuController.GetSelectedOption();
-                if (option == MenuController.MenuOption.Exit)
-                {
-                    this.Close();
-                }
-                else
-                {
+                if (option != MenuController.MenuOption.Exit)
                     menuController.SelectOption();
-                }
+                else
+                    this.Close();
             }
 
             this.Invalidate();
@@ -103,28 +146,26 @@ namespace Infiniminers_v0._0
 
         private void HandlePauseMenuInput(Keys key)
         {
-            if (key == Keys.W)
-            {
-                menuController.MoveMenuSelection(-1);
-            }
-            else if (key == Keys.S)
-            {
-                menuController.MoveMenuSelection(1);
-            }
-            else if (key == Keys.Return)
+            HandleMenuNavigation(key);
+
+            if (key == Keys.Return)
             {
                 MenuController.PauseMenuOption option = menuController.GetSelectedPauseOption();
-                if (option == MenuController.PauseMenuOption.Exit)
-                {
-                    this.Close();
-                }
-                else
-                {
+                if (option != MenuController.PauseMenuOption.Exit)
                     menuController.SelectPauseOption();
-                }
+                else
+                    this.Close();
             }
 
             this.Invalidate();
+        }
+
+        private void HandleMenuNavigation(Keys key)
+        {
+            if (key == Keys.W)
+                menuController.MoveMenuSelection(-1);
+            else if (key == Keys.S)
+                menuController.MoveMenuSelection(1);
         }
 
         private void ProcessMovement()
@@ -136,42 +177,46 @@ namespace Infiniminers_v0._0
             if (pressedKeys.Contains(Keys.S)) dy += 1;
 
             if (dx != 0 || dy != 0)
-            {
                 game.MovePlayer(dx, dy);
-                game.CollectOre();
-            }
         }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
 
-            if (menuController.CurrentState == GameState.MainMenu)
+            switch (menuController.CurrentState)
             {
-                menuRenderer.DrawMainMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+                case GameState.MainMenu:
+                    menuRenderer.DrawMainMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+                    break;
+                case GameState.Settings:
+                    menuRenderer.DrawSettingsMenu(e.Graphics, this.ClientSize);
+                    break;
+                case GameState.Playing:
+                    gameRenderer.Draw(e.Graphics, game);
+                    DrawGameHUD(e.Graphics);
+                    break;
+                case GameState.Paused:
+                    gameRenderer.Draw(e.Graphics, game);
+                    pauseMenuRenderer.DrawPauseMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+                    break;
+                case GameState.Shop:
+                    gameRenderer.Draw(e.Graphics, game);
+                    shopRenderer.DrawShop(e.Graphics, game.Player, shopController.SelectedPickaxeIndex, this.ClientSize);
+                    break;
             }
-            else if (menuController.CurrentState == GameState.Settings)
-            {
-                menuRenderer.DrawSettingsMenu(e.Graphics, this.ClientSize);
-            }
-            else if (menuController.CurrentState == GameState.Playing)
-            {
-                gameRenderer.Draw(e.Graphics, game);
+        }
 
-                int startX = 10;
-                int startY = 10;
-                int lineHeight = (int)this.Font.GetHeight() + 5;
+        private void DrawGameHUD(Graphics g)
+        {
+            const int startX = 10;
+            const int startY = 10;
+            int lineHeight = (int)this.Font.GetHeight() + 5;
 
-                e.Graphics.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
-                e.Graphics.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
-                e.Graphics.DrawString("ESC - Пауза", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
-                e.Graphics.DrawString($"Пак: {resourceManager.GetCurrentResourcePackName()}", this.Font, Brushes.Black, startX, startY + lineHeight * 3);
-            }
-            else if (menuController.CurrentState == GameState.Paused)
-            {
-                gameRenderer.Draw(e.Graphics, game);
-                pauseMenuRenderer.DrawPauseMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
-            }
+            g.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
+            g.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
+            g.DrawString("Space - Добыча | ESC - Пауза", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
+            g.DrawString($"Пак: {resourceManager.GetCurrentResourcePackName()}", this.Font, Brushes.Black, startX, startY + lineHeight * 3);
         }
     }
 }

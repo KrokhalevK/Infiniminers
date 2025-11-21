@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-
-namespace Infiniminers_v0._0
+﻿namespace Infiniminers_v0._0
 {
     public class MenuController
     {
