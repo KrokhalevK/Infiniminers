@@ -1,19 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing;
 
 namespace Infiniminers
 {
+    /// <summary>
+    /// Данные конкретного типа руды: прочность, броня, стоимость, цвет и текстура.
+    /// </summary>
     public class OreData
     {
-        public OreType Type {  get; set; }
-        public int Durability { get; set; }
-        public int Armor { get; set; }
-        public int Value {  get; set; }
-        public Color Color { get; set; }
-        public string TextureName {  get; set; }
+        public OreType Type { get; }
+        public int Durability { get; }
+        public int Armor { get; }
+        public int Value { get; }
+        public Color Color { get; }
+        public string TextureName { get; }
 
         public OreData(OreType type, int durability, int armor, int value, Color color, string textureName)
         {
@@ -26,6 +26,9 @@ namespace Infiniminers
         }
     }
 
+    /// <summary>
+    /// Типы руд в игре.
+    /// </summary>
     public enum OreType
     {
         Stone,
@@ -34,6 +37,9 @@ namespace Infiniminers
         Diamond
     }
 
+    /// <summary>
+    /// База данных всех типов руд с их характеристиками.
+    /// </summary>
     public static class OreDatabase
     {
         public static OreData GetOreData(OreType type)
@@ -72,7 +78,7 @@ namespace Infiniminers
                     Color.Cyan,
                     "ores/ore_diamond"
                 ),
-                _ => throw new System.ArgumentException("Неизвестный тип руды")
+                _ => throw new ArgumentException($"Неизвестный тип руды: {type}")
             };
         }
     }

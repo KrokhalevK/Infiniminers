@@ -1,18 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infiniminers
 {
+    /// <summary>
+    /// Кирка с характеристиками: тип, урон, цена, название.
+    /// </summary>
     public class Pickaxe
     {
-        public PickaxeType Type { get; set; }
-        public int Damage { get; set; }
-        public int Price { get; set; }
-        public string Name { get; set; }
-        public Pickaxe(PickaxeType type, int damage, int price, string name) 
+        public PickaxeType Type { get; }
+        public int Damage { get; }
+        public int Price { get; }
+        public string Name { get; }
+
+        public Pickaxe(PickaxeType type, int damage, int price, string name)
         {
             Type = type;
             Damage = damage;
@@ -20,6 +20,10 @@ namespace Infiniminers
             Name = name;
         }
     }
+
+    /// <summary>
+    /// Типы кирок в игре.
+    /// </summary>
     public enum PickaxeType
     {
         Wood,
@@ -28,6 +32,10 @@ namespace Infiniminers
         Diamond,
         Creative
     }
+
+    /// <summary>
+    /// База данных всех типов кирок с их характеристиками.
+    /// </summary>
     public static class PickaxeDatabase
     {
         public static Pickaxe GetPickaxe(PickaxeType type)
@@ -58,8 +66,13 @@ namespace Infiniminers
                     price: 2000,
                     name: "Алмазная кирка"
                 ),
-                PickaxeType.Creative => new Pickaxe(PickaxeType.Creative, damage: 1000000000, price: 0, name: "Кирка разработчика"),
-                _ => throw new System.ArgumentException("Неизвестный тип кирки")
+                PickaxeType.Creative => new Pickaxe(
+                    PickaxeType.Creative,
+                    damage: 1000000000,
+                    price: 0,
+                    name: "Кирка разработчика"
+                ),
+                _ => throw new ArgumentException($"Неизвестный тип кирки: {type}")
             };
         }
     }

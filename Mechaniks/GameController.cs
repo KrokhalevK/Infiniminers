@@ -1,5 +1,12 @@
-﻿namespace Infiniminers
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+
+namespace Infiniminers
 {
+    /// <summary>
+    /// Основной контроллер игры: управляет игроком, картами, рудами и взаимодействиями.
+    /// </summary>
     public class GameController
     {
         public Player Player { get; private set; }
@@ -8,8 +15,11 @@
 
         private readonly Size mapSize;
         private int contactDamageDelay = 0;
+
+        // Константы
         private const int CONTACT_DAMAGE_DELAY = 20;
-        private const int MINING_RANGE_BONUS = 50;
+        private const int PUSH_DISTANCE_STRAIGHT = 30;
+        private const int PUSH_DISTANCE_DIAGONAL = 20;
 
         public GameController(Size mapSize, int numberOfMaps = 3)
         {
@@ -26,30 +36,18 @@
             Player.Move(dx, dy);
 
             HandleOreCollision(oldX, oldY);
+
+            // Проверка смены карты
             int x = Player.X;
             int y = Player.Y;
-
             bool mapChanged = MapManager.TrySwitchMap(ref x, ref y, Player.Size, mapSize);
             if (mapChanged)
             {
                 Player.X = x;
                 Player.Y = y;
             }
-            HandleMapTransition();
+
             UpdateContactDamageDelay();
-        }
-
-        private void HandleMapTransition()
-        {
-            int x = Player.X;
-            int y = Player.Y;
-
-            bool mapChanged = MapManager.TrySwitchMap(ref x, ref y, Player.Size, mapSize);
-            if (mapChanged)
-            {
-                Player.X = x;
-                Player.Y = y;
-            }
         }
 
         private void UpdateContactDamageDelay()
@@ -66,7 +64,7 @@
             {
                 if (IsCollidingWithOre(ore))
                 {
-                    PushPlayerAwayImproved(oldX, oldY);
+                    PushPlayerAway(oldX, oldY);
                     ApplyContactDamage(ore, destroyedOres);
                 }
             }
@@ -80,7 +78,7 @@
                    (Player.Y + Player.Size > ore.Y && Player.Y < ore.Y + ore.Size);
         }
 
-        private void PushPlayerAwayImproved(int oldX, int oldY)
+        private void PushPlayerAway(int oldX, int oldY)
         {
             // Определяем направление движения игрока
             int dx = Player.X - oldX;
@@ -90,18 +88,18 @@
             if (Math.Abs(dx) > Math.Abs(dy))
             {
                 // Двигался больше горизонтально
-                Player.X = oldX - (dx > 0 ? 30 : -30);
+                Player.X = oldX - (dx > 0 ? PUSH_DISTANCE_STRAIGHT : -PUSH_DISTANCE_STRAIGHT);
             }
             else if (Math.Abs(dy) > Math.Abs(dx))
             {
                 // Двигался больше вертикально
-                Player.Y = oldY - (dy > 0 ? 30 : -30);
+                Player.Y = oldY - (dy > 0 ? PUSH_DISTANCE_STRAIGHT : -PUSH_DISTANCE_STRAIGHT);
             }
             else
             {
                 // Двигался диагонально
-                Player.X = oldX - (dx > 0 ? 20 : -20);
-                Player.Y = oldY - (dy > 0 ? 20 : -20);
+                Player.X = oldX - (dx > 0 ? PUSH_DISTANCE_DIAGONAL : -PUSH_DISTANCE_DIAGONAL);
+                Player.Y = oldY - (dy > 0 ? PUSH_DISTANCE_DIAGONAL : -PUSH_DISTANCE_DIAGONAL);
             }
         }
 
@@ -109,12 +107,12 @@
         {
             if (contactDamageDelay <= 0)
             {
-                int damage = ore.TakeDamage(Player.GetAttackPower());
+                int damage = ore.TakeDamage(Player.GetTotalDamage());
                 contactDamageDelay = CONTACT_DAMAGE_DELAY;
 
                 if (ore.IsDestroyed)
                 {
-                    Player.Money += ore.GetValue();
+                    Player.Money += ore.Data.Value;
                     destroyedOres.Add(ore);
                 }
             }
@@ -128,11 +126,11 @@
             {
                 if (IsInMiningRange(ore))
                 {
-                    int damage = ore.TakeDamage(Player.GetAttackPower());
+                    int damage = ore.TakeDamage(Player.GetTotalDamage());
 
                     if (ore.IsDestroyed)
                     {
-                        Player.Money += ore.GetValue();
+                        Player.Money += ore.Data.Value;
                         destroyedOres.Add(ore);
                     }
                 }
@@ -143,16 +141,17 @@
 
         private bool IsInMiningRange(Ore ore)
         {
-            return (Player.X + Player.Size + MINING_RANGE_BONUS >= ore.X &&
-                    Player.X - MINING_RANGE_BONUS <= ore.X + ore.Size) &&
-                   (Player.Y + Player.Size + MINING_RANGE_BONUS >= ore.Y &&
-                    Player.Y - MINING_RANGE_BONUS <= ore.Y + ore.Size);
+            int range = Player.MiningRange;
+            return (Player.X + Player.Size + range >= ore.X &&
+                    Player.X - range <= ore.X + ore.Size) &&
+                   (Player.Y + Player.Size + range >= ore.Y &&
+                    Player.Y - range <= ore.Y + ore.Size);
         }
 
         private void RemoveDestroyedOres(List<Ore> destroyedOres)
         {
-            foreach (var ore in destroyedOres)
-                Ores.Remove(ore);
+            var destroyedSet = new HashSet<Ore>(destroyedOres);
+            Ores.RemoveAll(ore => destroyedSet.Contains(ore));
         }
     }
 }

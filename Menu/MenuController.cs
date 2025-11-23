@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Infiniminers
 {
+    /// <summary>
+    /// Контроллер управления меню и состояниями игры.
+    /// </summary>
     public class MenuController
     {
         private GameState currentState = GameState.MainMenu;
@@ -17,46 +20,64 @@ namespace Infiniminers
 
         public void MoveMenuSelection(int direction)
         {
-            if (currentState == GameState.MainMenu)
+            switch (currentState)
             {
-                menuSelectionIndex += direction;
-                if (menuSelectionIndex < 0) menuSelectionIndex = 2;
-                if (menuSelectionIndex > 2) menuSelectionIndex = 0;
+                case GameState.MainMenu:
+                    CycleSelection(direction, GetMenuOptionsCount<MenuOption>());
+                    break;
+                case GameState.Settings:
+                    CycleSelection(direction, GetMenuOptionsCount<SettingsOption>());
+                    break;
+                case GameState.Paused:
+                    CycleSelection(direction, GetMenuOptionsCount<PauseMenuOption>());
+                    break;
             }
-            else if (currentState == GameState.Settings)
-            {
-                menuSelectionIndex += direction;
-                if (menuSelectionIndex < 0) menuSelectionIndex = 2;
-                if (menuSelectionIndex > 2) menuSelectionIndex = 0;
-            }
-            else if (currentState == GameState.Paused)
-            {
-                menuSelectionIndex += direction;
-                if (menuSelectionIndex < 0) menuSelectionIndex = 2;
-                if (menuSelectionIndex > 2) menuSelectionIndex = 0;
-            }
+        }
+
+        private void CycleSelection(int direction, int maxIndex)
+        {
+            menuSelectionIndex += direction;
+            if (menuSelectionIndex < 0)
+                menuSelectionIndex = maxIndex;
+            if (menuSelectionIndex > maxIndex)
+                menuSelectionIndex = 0;
+        }
+
+        private int GetMenuOptionsCount<T>() where T : Enum
+        {
+            return Enum.GetValues(typeof(T)).Length - 1;
         }
 
         public int GetSelectedMenuIndex() => menuSelectionIndex;
 
-        // ← ДОБАВИТЬ этот метод
         public void SelectOption()
         {
             if (currentState == GameState.MainMenu)
             {
                 MenuOption option = GetSelectedOption();
-                if (option == MenuOption.Play)
-                    currentState = GameState.Playing;
-                else if (option == MenuOption.Settings)
-                    currentState = GameState.Settings;
-                else if (option == MenuOption.Exit)
-                    Environment.Exit(0);
+                switch (option)
+                {
+                    case MenuOption.Play:
+                        currentState = GameState.Playing;
+                        break;
+                    case MenuOption.Settings:
+                        currentState = GameState.Settings;
+                        break;
+                    case MenuOption.Exit:
+                        Environment.Exit(0);
+                        break;
+                }
             }
         }
 
         public MenuOption GetSelectedOption()
         {
             return (MenuOption)menuSelectionIndex;
+        }
+
+        public SettingsOption GetSelectedSettingsOption()
+        {
+            return (SettingsOption)menuSelectionIndex;
         }
 
         public PauseMenuOption GetSelectedPauseOption()
@@ -110,11 +131,19 @@ namespace Infiniminers
 
         public List<string> GetAvailableResourcePacks() => resourcePackManager.GetAvailablePacks();
 
+        // Enum'ы опций меню
         public enum MenuOption
         {
             Play,
             Settings,
             Exit
+        }
+
+        public enum SettingsOption
+        {
+            ResourcePacks
+            // Audio (в будущем)
+            // Controls (в будущем)
         }
 
         public enum PauseMenuOption

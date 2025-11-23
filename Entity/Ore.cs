@@ -1,5 +1,11 @@
-﻿namespace Infiniminers
+﻿using System;
+using System.Drawing;
+
+namespace Infiniminers
 {
+    /// <summary>
+    /// Класс руды с координатами, прочностью и типом.
+    /// </summary>
     public class Ore
     {
         public int X { get; set; }
@@ -24,6 +30,10 @@
             MaxDurability = Data.Durability;
         }
 
+        /// <summary>
+        /// Наносит урон руде с учётом брони.
+        /// </summary>
+        /// <returns>Финальный урон (для визуализации)</returns>
         public int TakeDamage(int pickaxeDamage)
         {
             int finalDamage = CalculateDamage(pickaxeDamage);
@@ -33,8 +43,7 @@
 
         private int CalculateDamage(int pickaxeDamage)
         {
-            int damage = pickaxeDamage - Data.Armor;
-            return Math.Max(0, damage);
+            return Math.Max(0, pickaxeDamage - Data.Armor);
         }
 
         public bool IsDestroyed => Durability <= 0;
@@ -42,21 +51,6 @@
         public float GetHealthPercent()
         {
             return (float)Durability / MaxDurability;
-        }
-
-        public Color GetColor()
-        {
-            return Data.Color;
-        }
-
-        public string GetTextureName()
-        {
-            return Data.TextureName;
-        }
-
-        public int GetValue()
-        {
-            return Data.Value;
         }
     }
 }

@@ -6,13 +6,23 @@ using System.Linq;
 
 namespace Infiniminers
 {
-    public class ResourceManager
+    /// <summary>
+    /// Менеджер ресурсов: загрузка текстур, управление ресурс-паками.
+    /// </summary>
+    public class ResourceManager : IDisposable
     {
         private string resourcesPath;
         private string currentPackName = "default";
         private Dictionary<string, Bitmap> loadedTextures = new Dictionary<string, Bitmap>();
-        private Dictionary<string, Bitmap> defaultTextures = new Dictionary<string, Bitmap>();  // ← ДЕФОЛТ
+        private Dictionary<string, Bitmap> defaultTextures = new Dictionary<string, Bitmap>();
         private List<string> availablePacks = new List<string>();
+        private bool debugMode = false;
+        private bool disposed = false;
+
+        // Константы
+        private static readonly string[] SUPPORTED_EXTENSIONS = { ".png", ".jpg", ".bmp", ".gif" };
+        private const string DEFAULT_PACK_NAME = "default";
+        private const string PACKS_FOLDER = "packs";
 
         public ResourceManager(string basePath = "Assets")
         {
@@ -21,7 +31,7 @@ namespace Infiniminers
             resourcesPath = Path.Combine(projectRoot, basePath);
             resourcesPath = Path.GetFullPath(resourcesPath);
 
-            Console.WriteLine($"[ResourceManager] Путь к ресурсам: {resourcesPath}");
+            Log($"Путь к ресурсам: {resourcesPath}");
 
             if (!Directory.Exists(resourcesPath))
             {
@@ -34,26 +44,26 @@ namespace Infiniminers
 
             // Ищем все доступные паки
             ScanAvailablePacks();
-            LoadResourcePack("default");
+            LoadResourcePack(DEFAULT_PACK_NAME);
         }
 
         private void LoadDefaultTextures()
         {
-            Console.WriteLine("[ResourceManager] Загружаю дефолтные текстуры...");
+            Log("Загружаю дефолтные текстуры...");
 
-            string defaultPath = Path.Combine(resourcesPath, "default");
+            string defaultPath = Path.Combine(resourcesPath, DEFAULT_PACK_NAME);
             if (Directory.Exists(defaultPath))
                 LoadTexturesFromDirectoryToDict(defaultPath, defaultTextures);
 
-            Console.WriteLine($"[ResourceManager] Дефолтных текстур загружено: {defaultTextures.Count}");
+            Log($"Дефолтных текстур загружено: {defaultTextures.Count}");
         }
 
         private void ScanAvailablePacks()
         {
             availablePacks.Clear();
-            availablePacks.Add("default");
+            availablePacks.Add(DEFAULT_PACK_NAME);
 
-            string packsPath = Path.Combine(resourcesPath, "packs");
+            string packsPath = Path.Combine(resourcesPath, PACKS_FOLDER);
             if (Directory.Exists(packsPath))
             {
                 var dirs = Directory.GetDirectories(packsPath);
@@ -61,27 +71,27 @@ namespace Infiniminers
                 {
                     string packName = Path.GetFileName(dir);
                     availablePacks.Add(packName);
-                    Console.WriteLine($"[ResourceManager] Найден пак: {packName}");
+                    Log($"Найден пак: {packName}");
                 }
             }
 
-            Console.WriteLine($"[ResourceManager] Всего паков: {availablePacks.Count}");
+            Log($"Всего паков: {availablePacks.Count}");
         }
 
         private void CreateDefaultStructure()
         {
             try
             {
-                Directory.CreateDirectory(Path.Combine(resourcesPath, "default", "ores"));
-                Directory.CreateDirectory(Path.Combine(resourcesPath, "default", "player"));
-                Directory.CreateDirectory(Path.Combine(resourcesPath, "default", "backgrounds"));
-                Directory.CreateDirectory(Path.Combine(resourcesPath, "default", "ui"));
-                Directory.CreateDirectory(Path.Combine(resourcesPath, "packs"));
-                Console.WriteLine("[ResourceManager] Структура папок создана.");
+                Directory.CreateDirectory(Path.Combine(resourcesPath, DEFAULT_PACK_NAME, "ores"));
+                Directory.CreateDirectory(Path.Combine(resourcesPath, DEFAULT_PACK_NAME, "player"));
+                Directory.CreateDirectory(Path.Combine(resourcesPath, DEFAULT_PACK_NAME, "background"));
+                Directory.CreateDirectory(Path.Combine(resourcesPath, DEFAULT_PACK_NAME, "ui"));
+                Directory.CreateDirectory(Path.Combine(resourcesPath, PACKS_FOLDER));
+                Log("Структура папок создана.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ResourceManager] Ошибка при создании структуры: {ex.Message}");
+                Log($"✗ Ошибка при создании структуры: {ex.Message}");
             }
         }
 
@@ -89,41 +99,42 @@ namespace Infiniminers
         {
             if (!availablePacks.Contains(packName))
             {
-                Console.WriteLine($"[ResourceManager] ✗ Пак '{packName}' не существует!");
-                packName = "default";
+                Log($"✗ Пак '{packName}' не существует!");
+                packName = DEFAULT_PACK_NAME;
             }
 
             currentPackName = packName;
             loadedTextures.Clear();
 
-            string packPath;
-            if (packName == "default")
-                packPath = Path.Combine(resourcesPath, "default");
-            else
-                packPath = Path.Combine(resourcesPath, "packs", packName);
+            string packPath = GetPackPath(packName);
 
-            Console.WriteLine($"[ResourceManager] Загружаю пак: {packName}");
-            Console.WriteLine($"[ResourceManager] Путь: {packPath}");
+            Log($"Загружаю пак: {packName}");
+            Log($"Путь: {packPath}");
 
             if (Directory.Exists(packPath))
                 LoadTexturesFromDirectoryToDict(packPath, loadedTextures);
             else
-                Console.WriteLine($"[ResourceManager] ✗ Папка пака не найдена!");
+                Log($"✗ Папка пака не найдена!");
 
-            Console.WriteLine($"[ResourceManager] Загружено текстур из пака: {loadedTextures.Count}");
+            Log($"Загружено текстур из пака: {loadedTextures.Count}");
+        }
+
+        private string GetPackPath(string packName)
+        {
+            return packName == DEFAULT_PACK_NAME
+                ? Path.Combine(resourcesPath, DEFAULT_PACK_NAME)
+                : Path.Combine(resourcesPath, PACKS_FOLDER, packName);
         }
 
         private void LoadTexturesFromDirectoryToDict(string packPath, Dictionary<string, Bitmap> targetDict)
         {
-            var imageExtensions = new[] { ".png", ".jpg", ".bmp", ".gif" };
-
             try
             {
                 foreach (var file in Directory.GetFiles(packPath, "*.*", SearchOption.AllDirectories))
                 {
                     string extension = Path.GetExtension(file).ToLower();
 
-                    if (imageExtensions.Contains(extension))
+                    if (SUPPORTED_EXTENSIONS.Contains(extension))
                     {
                         try
                         {
@@ -136,18 +147,18 @@ namespace Infiniminers
                             var bitmap = new Bitmap(file);
                             targetDict[key] = bitmap;
 
-                            Console.WriteLine($"[ResourceManager] ✓ {key}");
+                            Log($"✓ {key}");
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[ResourceManager] ✗ Ошибка: {ex.Message}");
+                            Log($"✗ Ошибка загрузки файла: {ex.Message}");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ResourceManager] ✗ Ошибка при загрузке: {ex.Message}");
+                Log($"✗ Ошибка при сканировании папки: {ex.Message}");
             }
         }
 
@@ -165,11 +176,11 @@ namespace Infiniminers
             // Если не найдено, ищем в дефолтном паке
             if (defaultTextures.TryGetValue(key, out var defaultTexture))
             {
-                Console.WriteLine($"[ResourceManager] Текстура '{textureName}' не найдена в паке '{currentPackName}', используется дефолтная");
+                Log($"Текстура '{textureName}' не найдена в паке '{currentPackName}', используется дефолтная");
                 return defaultTexture;
             }
 
-            Console.WriteLine($"[ResourceManager] ✗ Текстура '{textureName}' не найдена ни в каком паке!");
+            Log($"✗ Текстура '{textureName}' не найдена!");
             return null;
         }
 
@@ -181,15 +192,41 @@ namespace Infiniminers
             return new List<string>(availablePacks);
         }
 
+        public void SetDebugMode(bool enabled) => debugMode = enabled;
+
+        private void Log(string message)
+        {
+            if (debugMode)
+                Console.WriteLine($"[ResourceManager] {message}");
+        }
+
         public void Dispose()
         {
-            foreach (var texture in loadedTextures.Values)
-                texture?.Dispose();
-            foreach (var texture in defaultTextures.Values)
-                texture?.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-            loadedTextures.Clear();
-            defaultTextures.Clear();
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposed) return;
+
+            if (disposing)
+            {
+                foreach (var texture in loadedTextures.Values)
+                    texture?.Dispose();
+                foreach (var texture in defaultTextures.Values)
+                    texture?.Dispose();
+
+                loadedTextures.Clear();
+                defaultTextures.Clear();
+            }
+
+            disposed = true;
+        }
+
+        ~ResourceManager()
+        {
+            Dispose(false);
         }
     }
 }

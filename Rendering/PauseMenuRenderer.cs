@@ -3,11 +3,20 @@ using System.Drawing;
 
 namespace Infiniminers
 {
-    public class PauseMenuRenderer
+    /// <summary>
+    /// Рендерер меню паузы.
+    /// </summary>
+    public class PauseMenuRenderer : IDisposable
     {
         private Font titleFont;
         private Font optionFont;
         private Font hintFont;
+
+        // Константы для позиций
+        private const int TITLE_OFFSET_Y = 150;
+        private const int OPTION_LINE_HEIGHT = 60;
+        private const int HINT_OFFSET_Y = 50;
+        private const int BACKGROUND_ALPHA = 150;
 
         public PauseMenuRenderer()
         {
@@ -22,23 +31,40 @@ namespace Infiniminers
             int centerY = screenSize.Height / 2;
 
             // Полупрозрачный фон
-            g.FillRectangle(new SolidBrush(Color.FromArgb(150, 0, 0, 0)), 0, 0, screenSize.Width, screenSize.Height);
+            g.FillRectangle(new SolidBrush(Color.FromArgb(BACKGROUND_ALPHA, 0, 0, 0)),
+                            0, 0, screenSize.Width, screenSize.Height);
 
-            // Заголовок
-            g.DrawString("ПАУЗА", titleFont, Brushes.Yellow, centerX - 50, centerY - 150);
+            // Заголовок (центрирован)
+            string title = "ПАУЗА";
+            SizeF titleSize = g.MeasureString(title, titleFont);
+            g.DrawString(title, titleFont, Brushes.Yellow,
+                        centerX - titleSize.Width / 2, centerY - TITLE_OFFSET_Y);
 
             // Опции
             string[] options = { "ПРОДОЛЖИТЬ", "МАГАЗИН", "ГЛАВНОЕ МЕНЮ" };
             for (int i = 0; i < options.Length; i++)
             {
-                int y = centerY + i * 60;
+                int y = centerY + i * OPTION_LINE_HEIGHT;
                 Brush brush = (selectedIndex == i) ? Brushes.Yellow : Brushes.White;
-                g.DrawString(options[i], optionFont, brush, centerX - 100, y);
+
+                // Центрирование опции
+                SizeF optionSize = g.MeasureString(options[i], optionFont);
+                g.DrawString(options[i], optionFont, brush,
+                            centerX - optionSize.Width / 2, y);
             }
 
-            // Подсказка
-            g.DrawString("W/S - Выбор | ENTER - Выбрать", hintFont, Brushes.LightGray,
-                centerX - 120, screenSize.Height - 50);
+            // Подсказка (центрирована)
+            string hint = "W/S - Выбор | ENTER - Выбрать";
+            SizeF hintSize = g.MeasureString(hint, hintFont);
+            g.DrawString(hint, hintFont, Brushes.LightGray,
+                        centerX - hintSize.Width / 2, screenSize.Height - HINT_OFFSET_Y);
+        }
+
+        public void Dispose()
+        {
+            titleFont?.Dispose();
+            optionFont?.Dispose();
+            hintFont?.Dispose();
         }
     }
 }

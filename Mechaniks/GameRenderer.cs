@@ -1,13 +1,20 @@
-﻿using Infiniminers;
-
+﻿using System;
 using System.Drawing;
 
-namespace Infiniminers_v0._0.Mechaniks
+namespace Infiniminers
 {
-    public class GameRenderer
+    /// <summary>
+    /// Рендерер игры: отрисовывает фон, игрока, руды и UI.
+    /// </summary>
+    public class GameRenderer : IDisposable
     {
         private Font hudFont;
         private ResourceManager resourceManager;
+
+        // Константы для отрисовки
+        private const int HEALTH_BAR_HEIGHT = 5;
+        private const int HEALTH_BAR_OFFSET = 10;
+        private const int VALUE_TEXT_OFFSET = 20;
 
         public GameRenderer(ResourceManager resourceManager = null)
         {
@@ -17,34 +24,35 @@ namespace Infiniminers_v0._0.Mechaniks
 
         public void Draw(Graphics g, GameController game)
         {
-            DrawBackground(g);
-            DrawPlayer(g, game);
+            DrawBackground(g, game.MapManager);  // ← Передаём MapManager
             DrawOres(g, game);
+            DrawPlayer(g, game);
         }
 
-        private void DrawBackground(Graphics g)
+        private void DrawBackground(Graphics g, MapManager mapManager)
         {
             if (resourceManager == null)
                 return;
 
-            var bgTexture = resourceManager.GetTexture("background/bg_grass");
+            // Получаем имя текстуры в зависимости от глубины
+            string bgTextureName = mapManager.GetBackgroundTextureName();
+            var bgTexture = resourceManager.GetTexture(bgTextureName);
+
             if (bgTexture != null)
                 g.DrawImage(bgTexture, 0, 0, g.VisibleClipBounds.Width, g.VisibleClipBounds.Height);
         }
 
         private void DrawPlayer(Graphics g, GameController game)
         {
-            if (resourceManager != null)
+            var playerTexture = TryGetTexture("player/player");
+            if (playerTexture != null)
             {
-                var playerTexture = resourceManager.GetTexture("player/player");
-                if (playerTexture != null)
-                {
-                    g.DrawImage(playerTexture, game.Player.X, game.Player.Y,
-                               game.Player.Size, game.Player.Size);
-                    return;
-                }
+                g.DrawImage(playerTexture, game.Player.X, game.Player.Y,
+                           game.Player.Size, game.Player.Size);
+                return;
             }
 
+            // Fallback: коричневый квадрат
             g.FillRectangle(Brushes.SaddleBrown, game.Player.X, game.Player.Y,
                            game.Player.Size, game.Player.Size);
         }
@@ -61,35 +69,59 @@ namespace Infiniminers_v0._0.Mechaniks
 
         private void DrawOreTexture(Graphics g, Ore ore)
         {
-            if (resourceManager != null)
+            var oreTexture = TryGetTexture(ore.Data.TextureName);
+            if (oreTexture != null)
             {
-                var oreTexture = resourceManager.GetTexture(ore.GetTextureName());
-                if (oreTexture != null)
-                {
-                    g.DrawImage(oreTexture, ore.X, ore.Y, ore.Size, ore.Size);
-                    return;
-                }
+                g.DrawImage(oreTexture, ore.X, ore.Y, ore.Size, ore.Size);
+                return;
             }
 
-            using (Brush oreBrush = new SolidBrush(ore.GetColor()))
+            // Fallback: цветной квадрат
+            using (Brush oreBrush = new SolidBrush(ore.Data.Color))
                 g.FillRectangle(oreBrush, ore.X, ore.Y, ore.Size, ore.Size);
         }
 
         private void DrawOreHealthBar(Graphics g, Ore ore)
         {
-            const int barHeight = 5;
             int barWidth = ore.Size;
             float healthPercent = ore.GetHealthPercent();
+            int barY = ore.Y - HEALTH_BAR_OFFSET;
 
-            g.FillRectangle(Brushes.DarkRed, ore.X, ore.Y - 10, barWidth, barHeight);
-            g.FillRectangle(Brushes.LimeGreen, ore.X, ore.Y - 10,
-                           (int)(barWidth * healthPercent), barHeight);
-            g.DrawRectangle(Pens.Black, ore.X, ore.Y - 10, barWidth, barHeight);
+            // Фон (красный)
+            g.FillRectangle(Brushes.DarkRed, ore.X, barY, barWidth, HEALTH_BAR_HEIGHT);
+
+            // Текущее здоровье (зелёный)
+            g.FillRectangle(Brushes.LimeGreen, ore.X, barY,
+                           (int)(barWidth * healthPercent), HEALTH_BAR_HEIGHT);
+
+            // Обводка
+            g.DrawRectangle(Pens.Black, ore.X, barY, barWidth, HEALTH_BAR_HEIGHT);
         }
 
         private void DrawOreValue(Graphics g, Ore ore)
         {
-            g.DrawString(ore.GetValue().ToString(), hudFont, Brushes.Black, ore.X, ore.Y - 15);
+            string valueText = ore.Data.Value.ToString();
+            float x = ore.X;
+            float y = ore.Y - VALUE_TEXT_OFFSET;
+
+            // Обводка для читаемости на любом фоне
+            g.DrawString(valueText, hudFont, Brushes.Black, x - 1, y);
+            g.DrawString(valueText, hudFont, Brushes.Black, x + 1, y);
+            g.DrawString(valueText, hudFont, Brushes.Black, x, y - 1);
+            g.DrawString(valueText, hudFont, Brushes.Black, x, y + 1);
+
+            // Основной текст (белый)
+            g.DrawString(valueText, hudFont, Brushes.White, x, y);
+        }
+
+        private Image? TryGetTexture(string textureName)
+        {
+            return resourceManager?.GetTexture(textureName);
+        }
+
+        public void Dispose()
+        {
+            hudFont?.Dispose();
         }
     }
 }

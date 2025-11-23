@@ -1,5 +1,4 @@
-﻿using Infiniminers_v0._0.Mechaniks;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -31,7 +30,8 @@ namespace Infiniminers
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка инициализации: {ex.Message}\n{ex.StackTrace}");
+                MessageBox.Show($"Ошибка инициализации: {ex.Message}\n{ex.StackTrace}",
+                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -48,6 +48,10 @@ namespace Infiniminers
             shopController = new ShopController();
             shopRenderer = new ShopRenderer();
             menuController.InitializeResourcePackManager(resourceManager);
+
+#if DEBUG
+            resourceManager.SetDebugMode(true);
+#endif
         }
 
         private void InitializeForm()
@@ -82,6 +86,9 @@ namespace Infiniminers
                     HandleResourcePackInput(e.KeyCode);
                     break;
             }
+
+            // Единая перерисовка после обработки ввода
+            this.Invalidate();
         }
 
         private void MainForm_KeyUp(object? sender, KeyEventArgs e)
@@ -96,14 +103,13 @@ namespace Infiniminers
 
             if (key == Keys.Return)
             {
-                if (menuController.GetSelectedMenuIndex() == 0)
+                MenuController.SettingsOption option = menuController.GetSelectedSettingsOption();
+                if (option == MenuController.SettingsOption.ResourcePacks)
                     menuController.OpenResourcePacks();
             }
 
             if (key == Keys.Escape)
                 menuController.BackToMenu();
-
-            this.Invalidate();
         }
 
         private void HandleGameplayInput(Keys key)
@@ -111,7 +117,6 @@ namespace Infiniminers
             if (key == Keys.Escape)
             {
                 menuController.PauseGame();
-                this.Invalidate();
                 return;
             }
 
@@ -119,20 +124,17 @@ namespace Infiniminers
             {
                 menuController.CurrentState = GameState.Shop;
                 shopController.Reset();
-                this.Invalidate();
                 return;
             }
 
             if (key == Keys.Space)
             {
                 game.CollectOre();
-                this.Invalidate();
                 return;
             }
 
             pressedKeys.Add(key);
             ProcessMovement();
-            this.Invalidate();
         }
 
         private void HandleShopInput(Keys key)
@@ -140,7 +142,6 @@ namespace Infiniminers
             if (key == Keys.Escape || key == Keys.I)
             {
                 menuController.CurrentState = GameState.Playing;
-                this.Invalidate();
                 return;
             }
 
@@ -150,8 +151,6 @@ namespace Infiniminers
                 shopController.MoveSelection(1);
             else if (key == Keys.Return)
                 shopController.TryBuyPickaxe(game.Player);
-
-            this.Invalidate();
         }
 
         private void HandleMainMenuInput(Keys key)
@@ -168,8 +167,6 @@ namespace Infiniminers
                 else if (option == MenuController.MenuOption.Exit)
                     this.Close();
             }
-
-            this.Invalidate();
         }
 
         private void HandlePauseMenuInput(Keys key)
@@ -187,13 +184,10 @@ namespace Infiniminers
                 else if (option == MenuController.PauseMenuOption.MainMenu)
                     menuController.BackToMenu();
             }
-
-            if (key == Keys.Escape)
+            else if (key == Keys.Escape)
             {
                 menuController.CurrentState = GameState.Playing;
             }
-
-            this.Invalidate();
         }
 
         private void HandleMenuNavigation(Keys key)
@@ -212,8 +206,6 @@ namespace Infiniminers
                 menuController.MoveResourcePackSelection(1);
             else if (key == Keys.Escape)
                 menuController.CloseResourcePacks();
-
-            this.Invalidate();
         }
 
         private void ProcessMovement()
@@ -262,7 +254,8 @@ namespace Infiniminers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Ошибка при отрисовке: {ex.Message}");
+                MessageBox.Show($"Ошибка при отрисовке: {ex.Message}\n{ex.StackTrace}",
+                    "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -274,8 +267,23 @@ namespace Infiniminers
 
             g.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
             g.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
-            g.DrawString("Space - Добыча | I - Магазин | ESC - Пауза", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
-            g.DrawString($"Кирка: {game.Player.CurrentPickaxe.Name}", this.Font, Brushes.Black, startX, startY + lineHeight * 3);
+            g.DrawString($"Глубина: {game.MapManager.CurrentDepth}", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
+            g.DrawString("Space - Добыча | I - Магазин | ESC - Пауза", this.Font, Brushes.Black, startX, startY + lineHeight * 3);
+            g.DrawString($"Кирка: {game.Player.CurrentPickaxe.Name} (Урон: {game.Player.GetTotalDamage()})", this.Font, Brushes.Black, startX, startY + lineHeight * 4);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            base.OnFormClosing(e);
+
+            // Освобождаем все IDisposable ресурсы
+            gameRenderer?.Dispose();
+            shopRenderer?.Dispose();
+            pauseMenuRenderer?.Dispose();
+            resourcePackRenderer?.Dispose();
+            settingsRenderer?.Dispose();
+            menuRenderer?.Dispose();
+            resourceManager?.Dispose();
         }
     }
 }
