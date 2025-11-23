@@ -1,4 +1,4 @@
-﻿namespace Infiniminers_v0._0
+﻿namespace Infiniminers
 {
     public class MapManager
     {
@@ -26,7 +26,7 @@
                 int x = rnd.Next(50, mapSize.Width - 50);
                 int y = rnd.Next(50, mapSize.Height - 50);
 
-                // РАСПРЕДЕЛЕНИЕ ТИПОВ РУД (гарантированное спавнение)
+                // РАСПРЕДЕЛЕНИЕ ТИПОВ РУД (гарантирован спавн)
                 OreType type;
                 int rand = rnd.Next(0, 100);
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Infiniminers_v0._0
+namespace Infiniminers
 {
     public class Pickaxe
     {
@@ -25,7 +25,8 @@ namespace Infiniminers_v0._0
         Wood,
         Stone,
         Iron,
-        Diamond
+        Diamond,
+        Creative
     }
     public static class PickaxeDatabase
     {
@@ -57,6 +58,7 @@ namespace Infiniminers_v0._0
                     price: 2000,
                     name: "Алмазная кирка"
                 ),
+                PickaxeType.Creative => new Pickaxe(PickaxeType.Creative, damage: 1000000000, price: 0, name: "Кирка разработчика"),
                 _ => throw new System.ArgumentException("Неизвестный тип кирки")
             };
         }

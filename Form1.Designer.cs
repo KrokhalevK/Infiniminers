@@ -1,4 +1,4 @@
-﻿namespace Infiniminers_v0._0
+﻿namespace Infiniminers
 {
     partial class Form1
     {

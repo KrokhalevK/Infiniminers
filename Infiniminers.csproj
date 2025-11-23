@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <RootNamespace>Infiniminers_v0._0</RootNamespace>
+    <RootNamespace>Infiniminers</RootNamespace>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>

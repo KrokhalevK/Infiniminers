@@ -1,6 +1,8 @@
-﻿using System.Drawing;
+﻿using Infiniminers;
 
-namespace Infiniminers_v0._0
+using System.Drawing;
+
+namespace Infiniminers_v0._0.Mechaniks
 {
     public class GameRenderer
     {

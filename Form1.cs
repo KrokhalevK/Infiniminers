@@ -1,27 +1,38 @@
+﻿using Infiniminers_v0._0.Mechaniks;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace Infiniminers_v0._0
+namespace Infiniminers
 {
     public partial class Form1 : Form
     {
-        private GameController game;
-        private GameRenderer gameRenderer;
-        private MainMenuRenderer menuRenderer;
-        private PauseMenuRenderer pauseMenuRenderer;
-        private ResourceManager resourceManager;
-        private MenuController menuController;
-        private ShopController shopController;
-        private ShopRenderer shopRenderer;
+        private GameController game = null!;
+        private GameRenderer gameRenderer = null!;
+        private MainMenuRenderer menuRenderer = null!;
+        private PauseMenuRenderer pauseMenuRenderer = null!;
+        private ResourceManager resourceManager = null!;
+        private MenuController menuController = null!;
+        private ShopController shopController = null!;
+        private ShopRenderer shopRenderer = null!;
+        private SettingsRenderer settingsRenderer = null!;
+        private ResourcePackRenderer resourcePackRenderer = null!;
         private HashSet<Keys> pressedKeys = new HashSet<Keys>();
 
         public Form1()
         {
             InitializeComponent();
-            InitializeGame();
-            InitializeForm();
+
+            try
+            {
+                InitializeGame();
+                InitializeForm();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка инициализации: {ex.Message}\n{ex.StackTrace}");
+            }
         }
 
         private void InitializeGame()
@@ -31,9 +42,12 @@ namespace Infiniminers_v0._0
             gameRenderer = new GameRenderer(resourceManager);
             menuRenderer = new MainMenuRenderer();
             pauseMenuRenderer = new PauseMenuRenderer();
+            settingsRenderer = new SettingsRenderer();
+            resourcePackRenderer = new ResourcePackRenderer();
             menuController = new MenuController();
             shopController = new ShopController();
             shopRenderer = new ShopRenderer();
+            menuController.InitializeResourcePackManager(resourceManager);
         }
 
         private void InitializeForm()
@@ -64,6 +78,9 @@ namespace Infiniminers_v0._0
                 case GameState.Shop:
                     HandleShopInput(e.KeyCode);
                     break;
+                case GameState.ResourcePacks:
+                    HandleResourcePackInput(e.KeyCode);
+                    break;
             }
         }
 
@@ -75,8 +92,17 @@ namespace Infiniminers_v0._0
 
         private void HandleSettingsInput(Keys key)
         {
+            HandleMenuNavigation(key);
+
+            if (key == Keys.Return)
+            {
+                if (menuController.GetSelectedMenuIndex() == 0)
+                    menuController.OpenResourcePacks();
+            }
+
             if (key == Keys.Escape)
                 menuController.BackToMenu();
+
             this.Invalidate();
         }
 
@@ -111,7 +137,7 @@ namespace Infiniminers_v0._0
 
         private void HandleShopInput(Keys key)
         {
-            if (key == Keys.I)
+            if (key == Keys.Escape || key == Keys.I)
             {
                 menuController.CurrentState = GameState.Playing;
                 this.Invalidate();
@@ -122,7 +148,7 @@ namespace Infiniminers_v0._0
                 shopController.MoveSelection(-1);
             else if (key == Keys.S)
                 shopController.MoveSelection(1);
-            else if (key == Keys.Enter)
+            else if (key == Keys.Return)
                 shopController.TryBuyPickaxe(game.Player);
 
             this.Invalidate();
@@ -135,9 +161,11 @@ namespace Infiniminers_v0._0
             if (key == Keys.Return)
             {
                 MenuController.MenuOption option = menuController.GetSelectedOption();
-                if (option != MenuController.MenuOption.Exit)
+                if (option == MenuController.MenuOption.Play)
                     menuController.SelectOption();
-                else
+                else if (option == MenuController.MenuOption.Settings)
+                    menuController.CurrentState = GameState.Settings;
+                else if (option == MenuController.MenuOption.Exit)
                     this.Close();
             }
 
@@ -151,10 +179,18 @@ namespace Infiniminers_v0._0
             if (key == Keys.Return)
             {
                 MenuController.PauseMenuOption option = menuController.GetSelectedPauseOption();
-                if (option != MenuController.PauseMenuOption.Exit)
-                    menuController.SelectPauseOption();
-                else
-                    this.Close();
+
+                if (option == MenuController.PauseMenuOption.Resume)
+                    menuController.CurrentState = GameState.Playing;
+                else if (option == MenuController.PauseMenuOption.Shop)
+                    menuController.OpenShop();
+                else if (option == MenuController.PauseMenuOption.MainMenu)
+                    menuController.BackToMenu();
+            }
+
+            if (key == Keys.Escape)
+            {
+                menuController.CurrentState = GameState.Playing;
             }
 
             this.Invalidate();
@@ -166,6 +202,18 @@ namespace Infiniminers_v0._0
                 menuController.MoveMenuSelection(-1);
             else if (key == Keys.S)
                 menuController.MoveMenuSelection(1);
+        }
+
+        private void HandleResourcePackInput(Keys key)
+        {
+            if (key == Keys.W)
+                menuController.MoveResourcePackSelection(-1);
+            else if (key == Keys.S)
+                menuController.MoveResourcePackSelection(1);
+            else if (key == Keys.Escape)
+                menuController.CloseResourcePacks();
+
+            this.Invalidate();
         }
 
         private void ProcessMovement()
@@ -184,26 +232,37 @@ namespace Infiniminers_v0._0
         {
             base.OnPaint(e);
 
-            switch (menuController.CurrentState)
+            try
             {
-                case GameState.MainMenu:
-                    menuRenderer.DrawMainMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
-                    break;
-                case GameState.Settings:
-                    menuRenderer.DrawSettingsMenu(e.Graphics, this.ClientSize);
-                    break;
-                case GameState.Playing:
-                    gameRenderer.Draw(e.Graphics, game);
-                    DrawGameHUD(e.Graphics);
-                    break;
-                case GameState.Paused:
-                    gameRenderer.Draw(e.Graphics, game);
-                    pauseMenuRenderer.DrawPauseMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
-                    break;
-                case GameState.Shop:
-                    gameRenderer.Draw(e.Graphics, game);
-                    shopRenderer.DrawShop(e.Graphics, game.Player, shopController.SelectedPickaxeIndex, this.ClientSize);
-                    break;
+                switch (menuController.CurrentState)
+                {
+                    case GameState.MainMenu:
+                        menuRenderer.DrawMainMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+                        break;
+                    case GameState.Settings:
+                        settingsRenderer.DrawSettingsMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+                        break;
+                    case GameState.Playing:
+                        gameRenderer.Draw(e.Graphics, game);
+                        DrawGameHUD(e.Graphics);
+                        break;
+                    case GameState.Paused:
+                        gameRenderer.Draw(e.Graphics, game);
+                        pauseMenuRenderer.DrawPauseMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+                        break;
+                    case GameState.Shop:
+                        gameRenderer.Draw(e.Graphics, game);
+                        shopRenderer.DrawShop(e.Graphics, game.Player, shopController.SelectedPickaxeIndex, this.ClientSize);
+                        break;
+                    case GameState.ResourcePacks:
+                        resourcePackRenderer.DrawResourcePackMenu(e.Graphics, this.ClientSize,
+                            menuController.GetAvailableResourcePacks(), menuController.GetResourcePackSelectedIndex());
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при отрисовке: {ex.Message}");
             }
         }
 
@@ -214,9 +273,9 @@ namespace Infiniminers_v0._0
             int lineHeight = (int)this.Font.GetHeight() + 5;
 
             g.DrawString($"X: {game.Player.X} Y: {game.Player.Y}", this.Font, Brushes.Black, startX, startY);
-            g.DrawString($"������: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
-            g.DrawString("Space - ������ | ESC - �����", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
-            g.DrawString($"���: {resourceManager.GetCurrentResourcePackName()}", this.Font, Brushes.Black, startX, startY + lineHeight * 3);
+            g.DrawString($"Деньги: {game.Player.Money}", this.Font, Brushes.Black, startX, startY + lineHeight);
+            g.DrawString("Space - Добыча | I - Магазин | ESC - Пауза", this.Font, Brushes.Black, startX, startY + lineHeight * 2);
+            g.DrawString($"Кирка: {game.Player.CurrentPickaxe.Name}", this.Font, Brushes.Black, startX, startY + lineHeight * 3);
         }
     }
 }

@@ -1,10 +1,11 @@
-﻿namespace Infiniminers_v0._0
+﻿namespace Infiniminers
 {
     public enum GameState
     {
         MainMenu,
-        Playing,
         Settings,
+        ResourcePacks,
+        Playing,
         Paused,
         Shop
     }

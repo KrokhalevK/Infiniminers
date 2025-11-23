@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Infiniminers_v0._0
+﻿namespace Infiniminers
 {
     public class Player
     {
