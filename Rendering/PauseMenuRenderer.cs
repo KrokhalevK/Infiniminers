@@ -41,7 +41,7 @@ namespace Infiniminers
                         centerX - titleSize.Width / 2, centerY - TITLE_OFFSET_Y);
 
             // Опции
-            string[] options = { "ПРОДОЛЖИТЬ", "МАГАЗИН", "ГЛАВНОЕ МЕНЮ" };
+            string[] options = { "ПРОДОЛЖИТЬ", "МАГАЗИН","НАСТРОЙКИ", "ГЛАВНОЕ МЕНЮ" };
             for (int i = 0; i < options.Length; i++)
             {
                 int y = centerY + i * OPTION_LINE_HEIGHT;

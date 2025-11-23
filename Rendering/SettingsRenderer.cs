@@ -28,14 +28,30 @@ namespace Infiniminers
             hintFont = new Font("Arial", 12);
         }
 
-        public void DrawSettingsMenu(Graphics g, Size screenSize, int selectedIndex)
+        /// <summary>
+        /// Рисует меню настроек.
+        /// </summary>
+        /// <param name="g">Graphics объект</param>
+        /// <param name="screenSize">Размер экрана</param>
+        /// <param name="selectedIndex">Выбранный индекс</param>
+        /// <param name="isInGame">Если true, фон полупрозрачный (видна игра позади)</param>
+        public void DrawSettingsMenu(Graphics g, Size screenSize, int selectedIndex, bool isInGame = false)
         {
             int centerX = screenSize.Width / 2;
             int centerY = screenSize.Height / 2;
 
-            // Полупрозрачный фон (видна игра позади)
-            g.FillRectangle(new SolidBrush(Color.FromArgb(BACKGROUND_ALPHA, 0, 0, 0)),
-                            0, 0, screenSize.Width, screenSize.Height);
+            // Фон зависит от контекста
+            if (isInGame)
+            {
+                // Полупрозрачный фон (видна игра позади)
+                g.FillRectangle(new SolidBrush(Color.FromArgb(BACKGROUND_ALPHA, 0, 0, 0)),
+                                0, 0, screenSize.Width, screenSize.Height);
+            }
+            else
+            {
+                // Непрозрачный тёмный фон (главное меню)
+                g.Clear(Color.DarkGray);
+            }
 
             // Заголовок (центрирован)
             string title = "НАСТРОЙКИ";

@@ -9,10 +9,16 @@ namespace Infiniminers
     public class MenuController
     {
         private GameState currentState = GameState.MainMenu;
+        private GameState previousState = GameState.MainMenu;  // ← НОВОЕ: отслеживаем предыдущее состояние
+
         public GameState CurrentState
         {
             get => currentState;
-            set => currentState = value;
+            set
+            {
+                previousState = currentState;  // ← Сохраняем предыдущее при изменении
+                currentState = value;
+            }
         }
 
         private int menuSelectionIndex = 0;
@@ -104,14 +110,37 @@ namespace Infiniminers
 
         public void CloseResourcePacks()
         {
-            currentState = GameState.Settings;
-            menuSelectionIndex = 0;
+            BackToPreviousState();  // ← Возвращаемся на предыдущий экран
         }
 
         public void BackToMenu()
         {
             currentState = GameState.MainMenu;
+            previousState = GameState.MainMenu;
             menuSelectionIndex = 0;
+        }
+
+        /// <summary>
+        /// Возврат на предыдущий экран (из настроек).
+        /// </summary>
+        public void BackToPreviousState()
+        {
+            // Если пришли из игры (паузы), вернуться в паузу
+            if (previousState == GameState.Playing || previousState == GameState.Paused)
+                currentState = GameState.Paused;
+            // Если пришли из главного меню, вернуться туда
+            else
+                currentState = GameState.MainMenu;
+
+            menuSelectionIndex = 0;
+        }
+
+        /// <summary>
+        /// Проверяет, пришли ли в настройки из игры.
+        /// </summary>
+        public bool IsFromGame()
+        {
+            return previousState == GameState.Playing || previousState == GameState.Paused;
         }
 
         public void InitializeResourcePackManager(ResourceManager resourceManager)
@@ -150,6 +179,7 @@ namespace Infiniminers
         {
             Resume,
             Shop,
+            Settings,
             MainMenu
         }
     }

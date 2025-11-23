@@ -109,7 +109,7 @@ namespace Infiniminers
             }
 
             if (key == Keys.Escape)
-                menuController.BackToMenu();
+                menuController.BackToPreviousState();
         }
 
         private void HandleGameplayInput(Keys key)
@@ -181,6 +181,8 @@ namespace Infiniminers
                     menuController.CurrentState = GameState.Playing;
                 else if (option == MenuController.PauseMenuOption.Shop)
                     menuController.OpenShop();
+                else if (option == MenuController.PauseMenuOption.Settings)
+                    menuController.CurrentState = GameState.Settings;
                 else if (option == MenuController.PauseMenuOption.MainMenu)
                     menuController.BackToMenu();
             }
@@ -232,7 +234,16 @@ namespace Infiniminers
                         menuRenderer.DrawMainMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
                         break;
                     case GameState.Settings:
-                        settingsRenderer.DrawSettingsMenu(e.Graphics, this.ClientSize, menuController.GetSelectedMenuIndex());
+                        bool isInGame = menuController.IsFromGame();
+
+                        // Если из игры - рисуем игру
+                        if (isInGame)
+                            gameRenderer.Draw(e.Graphics, game);
+
+                        // Рисуем настройки поверх
+                        settingsRenderer.DrawSettingsMenu(e.Graphics, this.ClientSize,
+                                                         menuController.GetSelectedMenuIndex(),
+                                                         isInGame);
                         break;
                     case GameState.Playing:
                         gameRenderer.Draw(e.Graphics, game);
@@ -258,6 +269,7 @@ namespace Infiniminers
                     "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
         private void DrawGameHUD(Graphics g)
         {
