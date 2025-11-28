@@ -10,6 +10,7 @@ namespace Infiniminers
         // === Позиция ===
         public int X { get; set; }
         public int Y { get; set; }
+        public int FacingDirection { get; set; } = 1;
 
         // === Ресурсы ===
         public int Money { get; set; }
@@ -35,6 +36,7 @@ namespace Infiniminers
         {
             X = startX;
             Y = startY;
+            CurrentPickaxe = PickaxeDatabase.GetPickaxe(PickaxeType.Wood);
 
             // Инициализация ресурсов
             Money = INITIAL_MONEY;
@@ -54,6 +56,11 @@ namespace Infiniminers
         // === Движение ===
         public void Move(int dx, int dy)
         {
+            if (dx > 0)
+                FacingDirection = 1;
+            else if (dx < 0)
+                FacingDirection = -1;
+
             X += dx * Speed;
             Y += dy * Speed;
         }

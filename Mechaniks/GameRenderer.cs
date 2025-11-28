@@ -44,17 +44,56 @@ namespace Infiniminers
 
         private void DrawPlayer(Graphics g, GameController game)
         {
-            var playerTexture = TryGetTexture("player/player");
-            if (playerTexture != null)
+            if (resourceManager != null)
             {
-                g.DrawImage(playerTexture, game.Player.X, game.Player.Y,
-                           game.Player.Size, game.Player.Size);
-                return;
+                var playerTexture = resourceManager.GetTexture("player/player");
+                if (playerTexture != null)
+                {
+                    int playerX = game.Player.X;
+                    int playerY = game.Player.Y;
+                    int playerSize = game.Player.Size;
+
+                    if (game.Player.FacingDirection == -1)
+                        DrawFlippedImage(g, playerTexture, playerX, playerY, playerSize, playerSize);
+                    else
+                        g.DrawImage(playerTexture, playerX, playerY, playerSize, playerSize);
+
+                    DrawPickaxeInHand(g, game.Player, playerX, playerY, playerSize);
+                    return;
+                }
             }
 
-            // Fallback: коричневый квадрат
             g.FillRectangle(Brushes.SaddleBrown, game.Player.X, game.Player.Y,
                            game.Player.Size, game.Player.Size);
+        }
+
+        private void DrawPickaxeInHand(Graphics g, Player player, int playerX, int playerY, int playerSize)
+        {
+            if (resourceManager == null)
+                return;
+
+            var pickaxeTexture = resourceManager.GetTexture(player.CurrentPickaxe.TextureName);
+            if (pickaxeTexture == null)
+                return;
+
+            int pickaxeSize = playerSize / 2;
+            int pickaxeX, pickaxeY;
+
+            if (player.FacingDirection == 1)
+            {
+                pickaxeX = playerX + playerSize - pickaxeSize / 2;
+                pickaxeY = playerY + playerSize - pickaxeSize - 5;
+            }
+            else
+            {
+                pickaxeX = playerX - pickaxeSize / 2;
+                pickaxeY = playerY + playerSize - pickaxeSize - 5;
+            }
+
+            if (player.FacingDirection == -1)
+                DrawFlippedImage(g, pickaxeTexture, pickaxeX, pickaxeY, pickaxeSize, pickaxeSize);
+            else
+                g.DrawImage(pickaxeTexture, pickaxeX, pickaxeY, pickaxeSize, pickaxeSize);
         }
 
         private void DrawOres(Graphics g, GameController game)
@@ -112,6 +151,24 @@ namespace Infiniminers
 
             // Основной текст (белый)
             g.DrawString(valueText, hudFont, Brushes.White, x, y);
+        }
+
+        private void DrawFlippedImage(Graphics g, Image image, int x, int y, int width, int height)
+        {
+            // Сохраняем текущее состояние Graphics
+            var state = g.Save();
+
+            // Переводим в точку назначения
+            g.TranslateTransform(x + width, y);
+
+            // Отражаем по X (масштаб -1 по X, 1 по Y)
+            g.ScaleTransform(-1, 1);
+
+            // Рисуем изображение в позицию (0, 0) после трансформации
+            g.DrawImage(image, 0, 0, width, height);
+
+            // Восстанавливаем состояние Graphics
+            g.Restore(state);
         }
 
         private Image? TryGetTexture(string textureName)
